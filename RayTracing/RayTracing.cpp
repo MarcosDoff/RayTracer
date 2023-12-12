@@ -1,12 +1,14 @@
 ﻿// RayTracing.cpp : Defines the entry point for the application.
 //
 
-#include "hittablelist.h"
-#include "sphere.h"
 #include "camera.h"
-#include "utils.h"
 #include "color.h"
+#include "hittablelist.h"
 #include "material.h"
+#include "sphere.h"
+#include "utils.h"
+
+#include <chrono>
 
 #include <GLFW/glfw3.h>
 
@@ -19,7 +21,7 @@ int main()
 		return -1;
 	}
 
-	window = glfwCreateWindow(640, 480, "Hello World", nullptr, nullptr);
+	//window = glfwCreateWindow(640, 480, "Hello World", nullptr, nullptr);
 
 	//world
 
@@ -71,9 +73,14 @@ int main()
 	world.add(std::make_shared<Sphere>(Point3(4, 1, 0), 1.0, material3));
 
 
-	const Camera camera;
+	Camera camera;
+
+	auto begin = std::chrono::steady_clock::now();
+
 	camera.render(world);
 
+	auto end = std::chrono::steady_clock::now();
 
-	std::clog << "\r Done!                                 \n";
+	std::clog << "\nTime difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]\n" << std::endl;
+	std::clog << "\n Done!                                 \n";
 }

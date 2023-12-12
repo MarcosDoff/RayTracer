@@ -1,27 +1,30 @@
 #pragma once
 
 
-#include "utils.h"
-
 #include "color.h"
 #include "hittable.h"
-
+#include <vector>
+#include <mutex>
 
 class Camera
 {
 public:
 
-	void render(const Hittable& world) const;
-
 	Camera();
 
+	void render(const Hittable& world);
+
 private:
+
+	void renderLines(const Hittable* world, int begin, int end);
 
 	Color rayColor(const Ray& r, const Hittable& world, const int depth) const;
 
 	Ray getRay(int i, int j) const;
 
 	Vec3 pixelSampleSquare() const;
+
+	void insertColorInBuffer(const Color& pixelColor, int samplesPerPixel, int pX, int pY);
 
 private:
 	double m_aspectRatio;
@@ -37,5 +40,6 @@ private:
 	Point3 m_lookFrom;
 	Point3 m_lookAt;
 	Vec3 m_vUp; //relative Up
-
+	std::vector<uint8_t> m_imageBuffer;
+	std::mutex m_mutex;
 };
