@@ -29,14 +29,23 @@
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         },
-        {
-            "name": "x64-release",
-            "displayName": "x64 Release",
-            "inherits": "x64-debug",
-          "cacheVariables": {
-            "CMAKE_BUILD_TYPE": "Release",
-            "CMAKE_CXX_FLAGS": "/O2"
-          }
+      {
+        "name": "x64-release",
+        "displayName": "x64 Release",
+        "inherits": "x64-debug",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_CXX_FLAGS": "/O2"
         }
+      },
+      {
+        "name": "x64-release wtih debug symbols",
+        "displayName": "x64 Release",
+        "inherits": "x64-debug",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+          "CMAKE_CXX_FLAGS": "/O2"
+        }
+      }
     ]
 }

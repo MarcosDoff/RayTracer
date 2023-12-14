@@ -2,11 +2,12 @@
 
 #include <iostream>
 #include <future>
+#include <atomic>
 
 #include "material.h"
 
 
-Camera::Camera() : m_aspectRatio(16.0 / 9), m_imageWidth(1920), m_samplesPerPixel(100),
+Camera::Camera() : m_aspectRatio(16.0 / 9), m_imageWidth(500), m_samplesPerPixel(10),
                    m_maxDepth(10), m_vfov(20.0), m_lookFrom(13, 2, 3), m_lookAt(0, 0, 0), m_vUp(0, 1, 0)
 {
 	//Image
@@ -49,18 +50,27 @@ void Camera::render(const Hittable& world)
 
 	std::clog << "rendering started!!\n";
 
-	constexpr int numOfThreads = 8;//TODO: get the number of threads automatically and go line by line
+	const int numOfThreads = std::thread::hardware_concurrency();
 
 	std::vector<std::future<void>> asyncs(numOfThreads);
-	const int heightOfSection = static_cast<int>(m_imageHeight / numOfThreads);
-	int begin = 0;
-	int end = heightOfSection;
+
+	std::atomic<int> currentLine = -1;
 
 	for (int i = 0; i < numOfThreads; ++i)
 	{
-		asyncs[i] = std::async(std::launch::async, &Camera::renderLines, this, &world, begin, end);
-		begin = end + 1;
-		end = begin + heightOfSection;
+		asyncs[i] = std::async(std::launch::async, [this, &world, &currentLine]()
+		{
+			while (true)
+			{
+				int line = ++currentLine;
+				if(currentLine >= m_imageHeight)
+				{
+					return;
+				}
+
+				renderLine(&world, line);
+			}
+		});
 	}
 
 	for (auto& async : asyncs)
@@ -80,36 +90,22 @@ void Camera::render(const Hittable& world)
 	std::clog << "rendering ended!!\n";
 }
 
-void Camera::renderLines(const Hittable* world, int begin, int end)
+void Camera::renderLine(const Hittable* world, int line)
 {
-	if (end <= begin || begin >= m_imageHeight)
+	for (int j = 0; j < m_imageWidth; j++)
 	{
-		std::clog << "Error\n";
-		return;
-	}
-
-	if (end > m_imageHeight - 1)
-	{
-		end = m_imageHeight - 1;
-	}
-
-	for (int i = begin; i <= end; i++)
-	{
-		for (int j = 0; j < m_imageWidth; j++)
+		auto pixelCenter = m_pixel00Loc + (j * m_pixelDeltaU) + (line * m_pixelDeltaV);
+		auto rayDirection = pixelCenter - m_center;
+		Color pixelColor(0, 0, 0);
+		for (int sample = 0; sample < m_samplesPerPixel; ++sample)
 		{
-			auto pixelCenter = m_pixel00Loc + (j * m_pixelDeltaU) + (i * m_pixelDeltaV);
-			auto rayDirection = pixelCenter - m_center;
-			Color pixelColor(0, 0, 0);
-			for (int sample = 0; sample < m_samplesPerPixel; ++sample)
-			{
-				Ray r = getRay(j, i);
-				pixelColor += rayColor(r, *world, m_maxDepth);
-			}
-
-			insertColorInBuffer(pixelColor, m_samplesPerPixel, j, i);
+			Ray r = getRay(j, line);
+			pixelColor += rayColor(r, *world, m_maxDepth);
 		}
-		std::clog << "finished line: " << i << "\n";
+
+		insertColorInBuffer(pixelColor, m_samplesPerPixel, j, line);
 	}
+	std::clog << "finished line: " << line << "\n";
 }
 
 Color Camera::rayColor(const Ray& r, const Hittable& world, const int depth) const
@@ -133,7 +129,6 @@ Color Camera::rayColor(const Ray& r, const Hittable& world, const int depth) con
 	const Vec3 unitDirection = unitVector(r.direction());
 	const auto a = 0.5 * (unitDirection.y() + 1.0);
 	return (1.0 - a) * Color(1.0, 1.0, 1.0) + a * Color(0.5, 0.7, 1.0);
-	//return 0.1*Color(1.0, 1.0, 1.0) + a * Color(0.5, 0.7, 1.0);
 }
 
 Ray Camera::getRay(int i, int j) const

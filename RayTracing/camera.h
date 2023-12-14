@@ -16,7 +16,7 @@ public:
 
 private:
 
-	void renderLines(const Hittable* world, int begin, int end);
+	void renderLine(const Hittable* world, int line);
 
 	Color rayColor(const Ray& r, const Hittable& world, const int depth) const;
 
